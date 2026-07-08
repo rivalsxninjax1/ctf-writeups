@@ -6,6 +6,4 @@
 
 * [Domino](tryhackme/domino/README.md)
 
-## CyberDefenders
-
 ## HackTheBox
