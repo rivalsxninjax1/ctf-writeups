@@ -57,7 +57,7 @@ PORT   STATE SERVICE VERSION
 
 **What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the *entry point* on a box like this — it's usually where you land *after* getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
 
-![Nmap:](tryhackme/domino/screenshots/nmap.jpg)
+![Nmap:](screenshots/0nmap.jpg)
 
 
 
@@ -85,6 +85,8 @@ backup       (Status: 301)
 static       (Status: 301)
 support      (Status: 301)
 ```
+
+![Gobuster:](tryhackme/domino/screenshots/1gobuster.jpg)
 
 **What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
