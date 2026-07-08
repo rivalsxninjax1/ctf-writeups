@@ -86,7 +86,7 @@ static       (Status: 301)
 support      (Status: 301)
 ```
 
-![Gobuster:](tryhackme/domino/screenshots/1gobuster.jpg)
+![Gobuster:](screenshots/1gobuster.jpg)
 
 **What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
@@ -103,8 +103,9 @@ Separately, the login page itself linked to two pages worth reading before touch
 
 **Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me *who* to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
 
-`![Screenshot: /backup/README.txt contents]`
-`![Screenshot: team.php page showing employee emails/usernames]`
+
+![/Backup:](screenshots/4backup.jpg)
+![/Backup:](screenshots/5users.jpg)
 
 ---
 
@@ -128,6 +129,8 @@ _backupKey: 'N3xusK3y2024!!'
 **What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
 `![Screenshot: app.js source showing the leaked key]`
+![/Backup:](screenshots/3staticapijs.jpg)
+
 
 ---
 
@@ -154,6 +157,8 @@ cat config_decrypted
 **What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
 `![Screenshot: decrypted config.enc contents]`
+![/Backup:](screenshots/3staticapijs.jpg)
+
 
 ---
 
