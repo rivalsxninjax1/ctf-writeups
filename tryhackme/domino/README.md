@@ -39,6 +39,7 @@ Four flags are captured along the way. Their real values aren't shown — they'r
 ```bash
 nmap -sC -sV <target_ip>
 ```
+![Nmap:](../../.gitbook/assets/0nmap.jpg)
 
 **How it works:**
 
@@ -57,7 +58,6 @@ PORT   STATE SERVICE VERSION
 
 **What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the _entry point_ on a box like this — it's usually where you land _after_ getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
 
-![Nmap:](../../.gitbook/assets/0nmap.jpg)
 
 ***
 
@@ -86,6 +86,8 @@ backup       (Status: 301)
 static       (Status: 301)
 support      (Status: 301)
 ```
+![Screenshot:](screenshots/1gobuster.jpg)
+
 
 **What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
@@ -97,17 +99,12 @@ NexusCorp Backup Configuration
 config.enc  - Encrypted application configuration (AES-128-ECB)
 Decryption key reference: see static/app.js (deployment notes)
 ```
+![Screenshot](../../.gitbook/assets/4backupreadme.jpg)
 
 Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames — including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
 
 **Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
-
-<<<<<<< HEAD
 ![Screenshot:](screenshots/5users.jpg)
-![Screenshot:](screenshots/4backupreadme.jpg)
-=======
-`![Screenshot: /backup/README.txt contents]` `![Screenshot: team.php page showing employee emails/usernames]`
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -131,12 +128,8 @@ _backupKey: 'N3xusK3y2024!!'
 
 **What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
-<<<<<<< HEAD
 ![/Backup:](screenshots/3staticapijs.jpg)
 
-=======
-`![Screenshot: app.js source showing the leaked key]` ![/Backup:](../../.gitbook/assets/3staticapijs.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -165,14 +158,8 @@ cat config_decrypted
 
 **What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
-<<<<<<< HEAD
 
 ![Screenshot:](screenshots/decrypt.jpg)
-
-=======
-`![Screenshot: decrypted config.enc contents]` ![Screenshot:](../../.gitbook/assets/3staticapijs.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
-
 ***
 
 ## 5. Cracking Login Credentials with Hydra
@@ -202,11 +189,7 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
-<<<<<<< HEAD
 ![Screenshot:](screenshots/hydra.jpg)
-=======
-`![Screenshot: hydra output showing the cracked sarah.johnson credentials]` `![Screenshot: successful login as sarah.johnson, session cookie set]` ![Screenshot:](../../.gitbook/assets/hydra.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -275,13 +258,9 @@ setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 
 The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
 
-<<<<<<< HEAD
 
 ![Screenshot:](screenshots/config.jpg)
 
-=======
-`![Screenshot: files.php leaking config.php]` ![Screenshot:](../../.gitbook/assets/config.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -309,7 +288,6 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
-<<<<<<< HEAD
 
 ![Screenshot:](screenshots/forgecookie.jpg)
 ![Screenshot:](screenshots/adminprog.jpg)
@@ -317,9 +295,6 @@ print(forged_cookie)
 
 
 
-=======
-`![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -387,12 +362,8 @@ whoami
 devops
 ```
 
-<<<<<<< HEAD
 
 ![Screenshot:](screenshots/lateral.jpg)
-=======
-`![Screenshot: su to devops succeeding]` ![Screenshot:](../../.gitbook/assets/lateral.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -443,13 +414,9 @@ cat /root/root.txt
 
 **Flag 4 (root):** `THM{flag4}`
 
-<<<<<<< HEAD
 
 ![Screenshot:](screenshots/root.jpg)
 ![Screenshot:](screenshots/realroot.jpg)
-=======
-`![Screenshot: pspy64 catching the root cron job]` `![Screenshot: SUID bash confirmed, root shell, and flag 4]` ![Screenshot:](../../.gitbook/assets/root.jpg) ![Screenshot:](../../.gitbook/assets/realroot.jpg)
->>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
