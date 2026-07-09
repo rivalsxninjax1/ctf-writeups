@@ -10,7 +10,7 @@
 
 Domino is a web-focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own  each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
 
-Four flags are captured along the way. Their real values aren't shown — they're written as `THM{flag1}`, `THM{flag2}`, `THM{flag3}`, `THM{flag4}` as placeholders for wherever your own captured string goes.
+Four flags are captured along the way. Their real values aren't shown they're written as `THM{flag1}`, `THM{flag2}`, `THM{flag3}`, `THM{flag4}` as placeholders for wherever your own captured string goes.
 
 ***
 
