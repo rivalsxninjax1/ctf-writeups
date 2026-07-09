@@ -59,13 +59,13 @@ PORT   STATE SERVICE VERSION
 |_http-title: NexusCorp Portal
 ```
 
-**What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the _entry point_ on a box like this — it's usually where you land _after_ getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
+**What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the _entry point_ on a box like this, it's usually where you land _after_ getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
 
 ***
 
 ### 2. Enumeration — Mapping the Web App
 
-**Why I did this:** the homepage only shows what the developers _want_ me to see. Real content — admin panels, backups, employee lists — usually lives at paths that aren't linked anywhere obvious. The only way to find them is to guess systematically using a wordlist, and to actually read every page that _is_ linked.
+**Why I did this:** the homepage only shows what the developers _want_ me to see. Real content admin panels, backups, employee lists  usually lives at paths that aren't linked anywhere obvious. The only way to find them is to guess systematically using a wordlist, and to actually read every page that _is_ linked.
 
 **Command:**
 
@@ -104,7 +104,7 @@ Decryption key reference: see static/app.js (deployment notes)
 
 ![Screenshot](../../.gitbook/assets/4backupreadme.jpg)
 
-Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames — including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
+Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames  including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
 
 **Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing. ![Screenshot:](<../../.gitbook/assets/5users (1).jpg>)
 
@@ -157,7 +157,7 @@ cat config_decrypted
 {"app_name":"NexusCorp Portal","version":"2.3.1","deploy_env":"production","system_user":"devops"}
 ```
 
-**What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
+**What this tells me / what's next:** this names a real system account  `devops`  that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
 ![Screenshot:](<../../.gitbook/assets/decrypt (1).jpg>)
 
@@ -165,7 +165,7 @@ cat config_decrypted
 
 ### 5. Cracking Login Credentials with Hydra
 
-**Why I did this:** I now had a list of valid usernames from `team.php`, and the login form itself was a plain POST request with a distinguishable failure message ("Invalid credentials"). That combination — real usernames plus a login form that responds differently to right vs. wrong passwords — is exactly what a password-spraying/brute-force tool needs. Rather than guessing manually, I let Hydra try a large common-password list against every known username at once.
+**Why I did this:** I now had a list of valid usernames from `team.php`, and the login form itself was a plain POST request with a distinguishable failure message ("Invalid credentials"). That combination  real usernames plus a login form that responds differently to right vs. wrong passwords  is exactly what a password spraying/brute force tool needs. Rather than guessing manually, I let Hydra try a large common-password list against very known username at once.
 
 **Command:**
 
@@ -188,9 +188,16 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **Result:** Hydra returned a valid username/password pair for `sarah.johnson`. Logging in with those credentials at `/index.php` returned a valid `nexus_session` cookie — my first authenticated foothold on the app, as a normal (non-admin) user.
 
+<<<<<<< HEAD
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
 ![Screenshot:](<../../.gitbook/assets/hydra (1).jpg>)
+=======
+![Screenshot:](screenshots/hydra.jpg)
+
+**What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
+
+>>>>>>> 0c5a6dd (ssfinal now added)
 
 ***
 
@@ -218,16 +225,16 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
   "notes": "THM{flag1}"
 }
 ```
-
 **What this tells me / what's next:** the server never checked whether the `id` I asked for matched _my own_ account — only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
 
 **Flag 1:** `THM{flag1}`
+
 
 ***
 
 ### 7. Turning a File-Read Bug into a Secrets Leak
 
-**Why I did this:** the same `/api/` area exposes `files.php`, which reads a file from disk and returns its contents, given a `name` parameter and a valid JWT. Whenever an app hands you _any_ kind of arbitrary file-read primitive, the highest-value targets are always the application's own source code and config files.
+**Why I did this:** the same `/api/` area exposes `files.php`, which reads a file from disk and returns its contents, given a `name` parameter and a valid JWT. Whenever an app hands you _any_ kind of arbitrary file read primitive, the highest-value targets are always the application's own source code and config files.
 
 **Command:**
 
@@ -244,6 +251,7 @@ curl 'http://<target_ip>/api/files.php?name=/var/www/html/config.php' \
   "content": "<?php\ndefine('DB_PASS', 'D3v0ps!2024');\ndefine('JWT_SECRET', 'nexus_jwt_s3cr3t_2024');\ndefine('APP_SECRET', 'nexus_app_k3y_2024');\n..."
 }
 ```
+![Screenshot:](../../.gitbook/assets/config.jpg)
 
 **What this tells me / what's next:** this one request leaked a database password, the JWT signing secret, and the `APP_SECRET` used to sign session cookies. Pulling `index.php` the same way clarified exactly how sessions worked:
 
@@ -255,15 +263,14 @@ $sig = hash_hmac('sha256', $cookie_data, APP_SECRET);
 setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 ```
 
-The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
+The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` no server side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
 
-![Screenshot:](../../.gitbook/assets/config.jpg)
 
 ***
 
 ### 8. Flag 2 — Forging an Admin Session
 
-**Why I did this:** I now have the exact ingredients the server uses to trust a session — the admin's user ID (from the IDOR in step 6) and the signing secret (from step 7). Rather than looking for a password, I can construct a valid admin session myself.
+**Why I did this:** I now have the exact ingredients the server uses to trust a session  the admin's user ID (from the IDOR in step 6) and the signing secret (from step 7). Rather than looking for a password, I can construct a valid admin session myself.
 
 **Command (Python):**
 
@@ -285,9 +292,16 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
+<<<<<<< HEAD
 ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
 
 \======= `![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
+=======
+
+![Screenshot:](../../.gitbook/assets/forgecookie.jpg)
+![Screenshot:](../../.gitbook/assets/adminprog.jpg) 
+![Screenshot:](../../.gitbook/assets/adminco.png)
+>>>>>>> 0c5a6dd (ssfinal now added)
 
 ***
 
