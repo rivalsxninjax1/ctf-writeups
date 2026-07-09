@@ -81,6 +81,7 @@ python 43905.py 10.49.176.78 5050 192.168.138.232 5555
 ```
 
 **Result:** Debug mode is off. This rules out the interactive debugger RCE path entirely  the developer (or whoever built this lab) at least remembered to disable Flask's debug mode in what looks like production. That's a dead end, but an important one to rule out early rather than assume.
+
 ![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2012.56.21.png)
 ![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2013.20.47.jpg)
 
@@ -106,7 +107,7 @@ internal             (Status: 200) [Size: 8770]
 
 A hidden `/internal` path. I browsed to `http://<ip>:5050/internal` and found a **login page**  the actual attack surface I'd been looking for. I spent a few minutes just clicking around with the browser dev tools open (Network tab) watching requests/responses to understand what the app was doing client side, but didn't see anything obviously wrong (no leaked API keys, no interesting JS logic)  so I moved to testing the login form directly.
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 13.29.01.PNG)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2013.29.01.PNG)
 
 ---
 
@@ -129,8 +130,9 @@ SELECT * FROM users WHERE username = '<input>' AND password = '<input>'
 
 **Result:** It worked immediately — authentication bypassed, logged in as an "operator"-level account (confirmed later from the session cookie, see below).
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 14.44.08.PNG)
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 14.44.19.PNG)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2014.44.08.PNG)
+
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2014.44.19.PNG)
 
 
 ---
@@ -193,7 +195,8 @@ host = 127.0.0.1
 port = 25
 from = noc-alerts@corp.internal
 ```
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 16.39.15.PNG)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2016.39.15.PNG)
+
 ![Screenshot:](screenshots/Screenshot 2026-07-09 at 16.58.30.heic)
 
 
