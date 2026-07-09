@@ -5,5 +5,7 @@
 ## TryHackMe
 
 * [Domino](tryhackme/domino/README.md)
+* [Domino](tryhackme/silent_monitor/README.md)
 
-## HackTheBox
+
+
