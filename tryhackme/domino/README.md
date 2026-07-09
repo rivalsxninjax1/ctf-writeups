@@ -104,8 +104,8 @@ Separately, the login page itself linked to two pages worth reading before touch
 
 **Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
 
-`![Screenshot: /backup/README.txt contents]`
-`![Screenshot: team.php page showing employee emails/usernames]`
+![Screenshot:](screenshots/5users.jpg)
+![Screenshot:](screenshots/4backupreadme.jpg)
 
 ***
 
@@ -129,7 +129,6 @@ _backupKey: 'N3xusK3y2024!!'
 
 **What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
-`![Screenshot: app.js source showing the leaked key]`
 ![/Backup:](screenshots/3staticapijs.jpg)
 
 
@@ -160,8 +159,8 @@ cat config_decrypted
 
 **What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
-`![Screenshot: decrypted config.enc contents]`
-![Screenshot:](screenshots/3staticapijs.jpg)
+
+![Screenshot:](screenshots/decrypt.jpg)
 
 
 ***
@@ -193,11 +192,7 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
-`![Screenshot: hydra output showing the cracked sarah.johnson credentials]` 
-`![Screenshot: successful login as sarah.johnson, session cookie set]`
 ![Screenshot:](screenshots/hydra.jpg)
-
-
 
 ***
 
@@ -228,9 +223,9 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
 
 **What this tells me / what's next:** the server never checked whether the `id` I asked for matched _my own_ account — only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
 
-**Flag 1:** `THM{flag1}`
+![Screenshot:](screenshots/.jpg)
 
-`![Screenshot: profile.php?id=1 response containing flag 1]`
+**Flag 1:** `THM{flag1}`
 
 ***
 
@@ -266,7 +261,7 @@ setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 
 The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
 
-`![Screenshot: files.php leaking config.php]`
+
 ![Screenshot:](screenshots/config.jpg)
 
 
@@ -296,7 +291,7 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
-`![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]`
+
 ![Screenshot:](screenshots/forgecookie.jpg)
 ![Screenshot:](screenshots/adminprog.jpg)
 ![Screenshot:](screenshots/adminco.png)
@@ -371,7 +366,7 @@ whoami
 devops
 ```
 
-`![Screenshot: su to devops succeeding]`
+
 ![Screenshot:](screenshots/lateral.jpg)
 
 ***
@@ -424,7 +419,7 @@ cat /root/root.txt
 
 **Flag 4 (root):** `THM{flag4}`
 
-`![Screenshot: pspy64 catching the root cron job]` `![Screenshot: SUID bash confirmed, root shell, and flag 4]`
+
 ![Screenshot:](screenshots/root.jpg)
 ![Screenshot:](screenshots/realroot.jpg)
 
