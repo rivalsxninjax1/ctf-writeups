@@ -81,8 +81,8 @@ python 43905.py 10.49.176.78 5050 192.168.138.232 5555
 ```
 
 **Result:** Debug mode is off. This rules out the interactive debugger RCE path entirely  the developer (or whoever built this lab) at least remembered to disable Flask's debug mode in what looks like production. That's a dead end, but an important one to rule out early rather than assume.
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 12.56.21.png)
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 13.20.47.jpg)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2012.56.21.png)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2013.20.47.jpg)
 
 
 ---
