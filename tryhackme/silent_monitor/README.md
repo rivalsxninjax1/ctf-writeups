@@ -83,6 +83,7 @@ python 43905.py 10.49.176.78 5050 192.168.138.232 5555
 **Result:** Debug mode is off. This rules out the interactive debugger RCE path entirely  the developer (or whoever built this lab) at least remembered to disable Flask's debug mode in what looks like production. That's a dead end, but an important one to rule out early rather than assume.
 
 ![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2012.56.21.png)
+
 ![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2013.20.47.jpg)
 
 
@@ -197,7 +198,7 @@ from = noc-alerts@corp.internal
 ```
 ![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2016.39.15.PNG)
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 16.58.30.heic)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2016.58.30.heic)
 
 
 That `TODO: migrate to secrets manager before Q2 audit` comment is basically the whole box's story in one line  a known piece of technical debt (plaintext service-account credentials in a config file) that never got fixed.
@@ -219,11 +220,11 @@ ssh sysadmin@10.49.178.125
 
 It accepted the password and dropped me into an interactive shell as `sysadmin`. This confirms the credential-reuse hypothesis and gets me off the constrained web app entirely and onto a full Linux shell.
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 17.05.50.jpg)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2017.05.50.jpg)
 
-**Flag #1 (user.txt)** was sitting in the home directory — the first objective of the box, achieved through: SQLi → command injection → config leak → credential reuse.
+**Flag #1 (user.txt)** was sitting in the home directory  the first objective of the box, achieved through: SQLi → command injection → config leak → credential reuse.
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 17.07.29.heic)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2017.07.29.heic)
 
 ---
 
@@ -272,7 +273,7 @@ keepassxc ~/silent/infrastructure.kdbx
 
 I didn't have a master password yet, but KeePass databases are also frequently protected with weak or reused passwords, or the master password itself is guessable/crackable from context gathered earlier in the box (in the actual attempt, I tried passwords already seen during the engagement before resorting to brute-force cracking with `keepass2john` + `hashcat`/`john`). Once inside, the vault contained credentials for the target  but importantly, they were **not** valid for logging in over SSH as a different/higher privileged user, which told me privilege escalation was going to come from somewhere else — not from a "found a better password" shortcut.
 
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 18.25.14.jpg)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2018.25.14.jpg)
 
 ---
 
@@ -301,7 +302,7 @@ python3 copy_fail_exp.py
 Running it dropped me into a root shell (`su` prompt returning uid 0 instead of the normal login flow), from which I could read the final flag.
 
 **Flag #2 (root.txt)** was retrieved from `/root/`.
-![Screenshot:](screenshots/Screenshot 2026-07-09 at 20.18.26.jpg)
+![Screenshot:](screenshots/Screenshot%202026-07-09%20at%2020.18.26.jpg)
 
 ---
 
@@ -320,8 +321,8 @@ Running it dropped me into a root shell (`su` prompt returning uid 0 instead of 
 ### Suggested fixes (for a real environment)
 - Use parameterized queries / an ORM — never string-concatenate user input into SQL.
 - Never pass user input into `os.system()`/`subprocess` with `shell=True`; use `subprocess.run([...], shell=False)` with an argument list, and validate that "target" is actually a well-formed IP before use.
-- Never store plaintext service-account passwords in config files — use a proper secrets manager, and rotate immediately if one is found exposed.
-- Enforce unique credentials per system/service — no password reuse between a web app's backend service account and real login accounts.
+- Never store plaintext service-account passwords in config files use a proper secrets manager, and rotate immediately if one is found exposed.
+- Enforce unique credentials per system/service  no password reuse between a web app's backend service account and real login accounts.
 - Restrict file permissions on backup/credential artifacts to the owning service account only.
 - Keep kernels patched, and track CVEs for the specific kernel version in use.
 
