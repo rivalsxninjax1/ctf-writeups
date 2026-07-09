@@ -41,6 +41,7 @@ Four flags are captured along the way. Their real values aren't shown — they'r
 ```bash
 nmap -sC -sV <target_ip>
 ```
+
 ![Nmap:](../../.gitbook/assets/0nmap.jpg)
 
 **How it works:**
@@ -59,7 +60,6 @@ PORT   STATE SERVICE VERSION
 ```
 
 **What this tells me / what's next:** Only two ports are open. SSH (22) is almost never the _entry point_ on a box like this — it's usually where you land _after_ getting credentials some other way. So the entire initial attack surface is the web app on port 80. That's where I go next.
-
 
 ***
 
@@ -88,8 +88,8 @@ backup       (Status: 301)
 static       (Status: 301)
 support      (Status: 301)
 ```
-![Screenshot:](screenshots/1gobuster.jpg)
 
+![Screenshot:](../../.gitbook/assets/1gobuster.jpg)
 
 **What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
@@ -101,12 +101,12 @@ NexusCorp Backup Configuration
 config.enc  - Encrypted application configuration (AES-128-ECB)
 Decryption key reference: see static/app.js (deployment notes)
 ```
+
 ![Screenshot](../../.gitbook/assets/4backupreadme.jpg)
 
 Separately, the login page itself linked to two pages worth reading before touching anything else: `team.php` and `forgot.php`. The **team page listed staff members and their email addresses**, which directly reveals the app's username format (`firstname.lastname`, matching the pattern the login form's placeholder text hinted at). I noted down the derived usernames — including `sarah.johnson`, `laura.hayes`, and others — since a login page is useless to attack without a list of valid accounts to try.
 
-**Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
-![Screenshot:](screenshots/5users.jpg)
+**Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing. ![Screenshot:](<../../.gitbook/assets/5users (1).jpg>)
 
 ***
 
@@ -130,8 +130,7 @@ _backupKey: 'N3xusK3y2024!!'
 
 **What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
-![/Backup:](screenshots/3staticapijs.jpg)
-
+![/Backup:](<../../.gitbook/assets/3staticapijs (1).jpg>)
 
 ***
 
@@ -160,8 +159,8 @@ cat config_decrypted
 
 **What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
+![Screenshot:](<../../.gitbook/assets/decrypt (1).jpg>)
 
-![Screenshot:](screenshots/decrypt.jpg)
 ***
 
 ### 5. Cracking Login Credentials with Hydra
@@ -191,9 +190,7 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
-
-![Screenshot:](screenshots/hydra.jpg)
-
+![Screenshot:](<../../.gitbook/assets/hydra (1).jpg>)
 
 ***
 
@@ -262,7 +259,6 @@ The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no s
 
 ![Screenshot:](../../.gitbook/assets/config.jpg)
 
-
 ***
 
 ### 8. Flag 2 — Forging an Admin Session
@@ -289,12 +285,9 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
-
-![Screenshot:](<../../.gitbook/assets/forgecookie (1).jpg>) ![Screenshot:](<../../.gitbook/assets/adminprog (1).jpg>) ![Screenshot:](<../../.gitbook/assets/adminco (1).png>)
+![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
 
 \======= `![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
-
-
 
 ***
 
@@ -362,8 +355,7 @@ whoami
 devops
 ```
 
-
-![Screenshot:](screenshots/lateral.jpg)
+![Screenshot:](<../../.gitbook/assets/lateral (1).jpg>)
 
 ***
 
@@ -414,9 +406,7 @@ cat /root/root.txt
 
 **Flag 4 (root):** `THM{flag4}`
 
-
-![Screenshot:](screenshots/root.jpg)
-![Screenshot:](screenshots/realroot.jpg)
+![Screenshot:](<../../.gitbook/assets/root (1).jpg>) ![Screenshot:](<../../.gitbook/assets/realroot (2).jpg>)
 
 ***
 
