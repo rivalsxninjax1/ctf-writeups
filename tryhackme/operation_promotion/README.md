@@ -433,7 +433,7 @@ cat flag.txt
 6. Landed as `www-data`; enumerated writable files → found `db.conf` (bcrypt hash for `jford`) and `app.db` (plaintext user table).
 7. Dumped the SQLite `users` table; cross-checked `/etc/passwd` to confirm only `root`, `ubuntu`, and `jford` had real shells.
 8. Tried a targeted wordlist built from leaked values against the bcrypt hash → no match. Ran LinPEAS → nothing immediately actionable.
-9. Used `hashcat --stdout` with mutation rules to generate season+year password variants, fed the list into `hydra` against SSH → cracked `jford`'s real password (`spring2026!`).
+9. Used `hashcat --stdout` with mutation rules to generate season+year password variants, fed the list into `hydra` against SSH → cracked `jford`'s real password (`s*****`).
 10. Logged in over SSH as `jford` → **user.txt**.
 11. `sudo -l` revealed unrestricted `sudo` on `find` → used `find -exec /bin/sh` to spawn a root shell → **root.txt**.
 
