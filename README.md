@@ -4,7 +4,7 @@ Welcome  this is a collection of my writeups from TryHackMe, CyberDefenders, Hac
 
 ## Latest
 
-- [Silent_monitor (TryHackMe)](tryhackme/silent_monitor/README.md) 
+- [operation_promotion (TryHackMe)](tryhackme/operation_promotion/README.md) 
 
 ## About
 
