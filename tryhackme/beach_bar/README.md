@@ -4,7 +4,7 @@
 **Room:** Beach Bar
 **Target IP:** 10.49.163.147 (hostname `tryhackme-2404`)
 **Attacking Machine:** Kali Linux (`ninjax@ninjax`)
-**Date:** August 2026
+
 
 ---
 
