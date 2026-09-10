@@ -258,7 +258,6 @@ note: Screenshots are available below
 ![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.33.11.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.38.06.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-09 at 10.32.49.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.16.14.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.20.35.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.24.39.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.25.45.png)
