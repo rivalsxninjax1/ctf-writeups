@@ -253,19 +253,20 @@ That search surfaced public reporting tying the receiving wallet to **LockBit**,
 10. Pivoted from the wallet to its largest associated transaction → identified the receiving address → found public reporting linking it to **LockBit**.
 
 note: Screenshots are available below
-![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.30.33.png)
-![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.31.23.png)
-![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.33.11.png)
-![Screenshot:](screenshots/Screenshot 2026-09-09 at 09.38.06.png)
-![Screenshot:](screenshots/Screenshot 2026-09-09 at 10.32.49.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.20.35.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.24.39.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.25.45.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.28.42.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.31.03.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.34.44.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.34.57.png)
-![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.39.22.png)
+![Screenshot:](screenshots/Screenshot%202026-09-09%20at%2009.30.33.png)
+![Screenshot:](screenshots/Screenshot%202026-09-09%20at%2009.31.23.png)
+![Screenshot:](screenshots/Screenshot%202026-09-09%20at%2009.33.11.png)
+![Screenshot:](screenshots/Screenshot%202026-09-09%20at%2009.38.06.png)
+![Screenshot:](screenshots/Screenshot%202026-09-09%20at%2010.32.49.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.16.14.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.20.35.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.24.39.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.25.45.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.28.42.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.31.03.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.34.44.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.34.57.png)
+![Screenshot:](screenshots/Screenshot%202026-09-10%20at%2013.39.22.png)
 ---
 
 *End of write-up.*
