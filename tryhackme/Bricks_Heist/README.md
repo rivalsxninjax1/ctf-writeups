@@ -260,13 +260,12 @@ note: Screenshots are available below
 ![Screenshot:](screenshots/Screenshot 2026-09-09 at 10.32.49.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.20.35.png)
 ![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.24.39.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.25.45.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.28.42.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.31.03.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.34.44.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.34.57.png)
-![Screenshot:](screenshots/Screenshot 2026-09-10 at 13.39.22.png)
-
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.25.45.png)
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.28.42.png)
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.31.03.png)
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.34.44.png)
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.34.57.png)
+![Screenshot:](../../.gitbook/assets/Screenshot 2026-09-10 at 13.39.22.png)
 ---
 
 *End of write-up.*
