@@ -10,6 +10,8 @@
 * [Beach Bar](tryhackme/beach_bar/README.md)
 * [Infinity Pool](tryhackme/infinity_pool/README.md)
 * [Towel on the Sunbed](tryhackme/towel_on_the_sunbed/README.md)
+* [Bricks Heist](tryhackme/Bricks_Heist/README.md)
+
 
 
 
