@@ -11,6 +11,8 @@
 * [Infinity Pool](tryhackme/infinity_pool/README.md)
 * [Towel on the Sunbed](tryhackme/towel_on_the_sunbed/README.md)
 * [Bricks Heist](tryhackme/Bricks_Heist/README.md)
+* [Manager Wants a Word](tryhackme/Manager_wants_a_word/README.md)
+
 
 
 
